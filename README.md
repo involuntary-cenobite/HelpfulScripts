@@ -1,2 +1,2 @@
 # HelpfulScripts
-various script for helpful actions
+various scripts for helpful actions
