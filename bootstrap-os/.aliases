@@ -1,0 +1,52 @@
+# faster
+alias update='sudo apt update && printf "\n\n" && sudo snap refresh --list'
+alias upgrade='sudo apt dist-upgrade && printf "\n\n" && sudo snap refresh'
+
+# saftey
+alias rm='rm -i'
+
+# fix the stupid
+alias nao='nano'
+alias nana='nano'
+alias clera='clear'
+alias cd..='cd ..'
+alias ..="cd .."
+alias terrafrom='terraform'
+
+# shortcuts
+alias k='kubectl'
+alias tf='terraform'
+alias tfa='terraform apply'
+alias s='sudo'
+alias tf='terraform'
+alias brave='brave-browser'
+
+## docker 
+alias dc='docker compose'
+alias dcu='docker compose up -d --remove-orphans'
+alias dcd='docker compose down'
+alias dcp='docker compose pull'
+alias dps="docker ps --format '{{.Names}}' | sort"
+alias dexec='docker exec -it'
+## git
+alias gs='git status'
+alias gadd='git add'
+alias gb='git branch -vv'
+alias checkout='git checkout'
+alias gcm='git commit -m'
+
+# easy
+alias cls='clear'
+alias rg='rg --sort path '
+
+# better defaults
+alias cat='batcat --paging=never'
+alias ls='eza --icons=always --git -M'
+
+# default default
+alias catcat='\cat'
+alias lsls='\ls'
+
+# Tools
+alias vault-login='source /home/dan/tools/scripts/env-vars/vault-env-vars_set.source'
+alias set-proxy='source /home/dan/tools/scripts/env-vars/proxy-set.source'
