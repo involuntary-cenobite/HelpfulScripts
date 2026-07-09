@@ -42,8 +42,8 @@ pkg_remove() {
 remove_packages() {
     info "Removing packages..."
     case "$DISTRO" in
-        debian) pkg_remove ripgrep fzf htop jq tree bat fd-find btop eza ;;
-        fedora) pkg_remove ripgrep fzf htop jq tree bat fd btop eza ;;
+        debian) pkg_remove ripgrep fzf htop jq tree bat fd-find btop eza terraform archey4 ;;
+        fedora) pkg_remove ripgrep fzf htop jq tree bat fd btop eza terraform archey4 ;;
     esac
 }
 
@@ -51,7 +51,7 @@ remove_packages() {
 
 remove_binaries() {
     info "Removing binaries from /usr/local/bin..."
-    for bin in terraform minikube kubectl k9s lazygit lazydocker btop; do
+    for bin in minikube kubectl k9s lazygit lazydocker btop; do
         if [ -f "/usr/local/bin/$bin" ]; then
             sudo rm -f "/usr/local/bin/$bin"
             info "  removed /usr/local/bin/$bin"

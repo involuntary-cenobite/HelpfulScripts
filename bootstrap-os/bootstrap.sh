@@ -33,6 +33,7 @@ CUSTOM_INSTALLERS=(
     install_k9s         # binary download from GitHub releases
     install_lazygit     # binary download from GitHub releases
     install_lazydocker  # binary download from GitHub releases
+    install_archey      # .deb/.rpm from GitHub releases
 )
 
 # --- Helpers ---
@@ -164,17 +165,20 @@ install_ohmyzsh() {
 
     local zshrc="$HOME/.zshrc"
     if [ -f "$zshrc" ]; then
-        grep -q '^plugins=(' "$zshrc" && \
-            sed -i '/^plugins=(/c\plugins=(git-prompt zsh-autosuggestions zsh-syntax-highlighting)' "$zshrc"
-        grep -q '^ZSH_THEME=' "$zshrc" && \
+        if grep -q '^plugins=(' "$zshrc"; then
+            # Handle both single-line `plugins=(a b c)` and multi-line `plugins=(\n a\n b\n)` forms
+            sed -i -E ':a; /^plugins=\(/ { N; /\)/!ba; s/^plugins=\([^)]*\)/plugins=(git-prompt zsh-autosuggestions zsh-syntax-highlighting)/; }' "$zshrc"
+        fi
+        if grep -q '^ZSH_THEME=' "$zshrc"; then
             sed -i 's/^ZSH_THEME=.*/ZSH_THEME=""/' "$zshrc"
+        fi
     fi
 }
 
 configure_prompt() {
     local zshrc="$HOME/.zshrc"
     [ -f "$zshrc" ] || { warn "~/.zshrc not found — creating it"; touch "$zshrc"; }
-    grep -q '# BEGIN bootstrap: prompt' "$zshrc" && { info "Prompt already configured, skipping."; return; }
+    if grep -q '# BEGIN bootstrap: prompt' "$zshrc"; then info "Prompt already configured, skipping."; return; fi
 
     info "Configuring prompt..."
     cat >> "$zshrc" << 'ZSHRC_PROMPT'
@@ -235,16 +239,18 @@ ZSHRC_PROMPT
 configure_zshrc() {
     local zshrc="$HOME/.zshrc"
     [ -f "$zshrc" ] || { warn "~/.zshrc not found — creating it"; touch "$zshrc"; }
-    grep -q '# BEGIN bootstrap: shell' "$zshrc" && { info "Shell config already applied, skipping."; return; }
+    if grep -q '# BEGIN bootstrap: shell' "$zshrc"; then info "Shell config already applied, skipping."; return; fi
 
     info "Configuring PATH and aliases in ~/.zshrc..."
     cat >> "$zshrc" << 'ZSHRC_SHELL'
 
 # BEGIN bootstrap: shell
 typeset -U path
-path=(/opt "$HOME/.local/bin" $path)
+path=(/opt "$HOME/.local/bin" "$HOME/.local/share/flatpak/exports/bin" /snap/bin $path)
 
 [ -f "$HOME/.aliases" ] && source "$HOME/.aliases"
+
+(( $+commands[archey] )) && archey
 # END bootstrap: shell
 ZSHRC_SHELL
 
@@ -422,6 +428,25 @@ install_lazydocker() {
         "https://github.com/jesseduffield/lazydocker/releases/download/v${version}/lazydocker_${version}_Linux_x86_64.tar.gz"
 }
 
+install_archey() {
+    begin_install archey || return 0
+    local version; version=$(github_latest_tag HorlogeSkynet/archey4 strip-v)
+    local tmpdir; tmpdir=$(mktemp -d)
+    case "$DISTRO" in
+        debian)
+            curl -fsSL "https://github.com/HorlogeSkynet/archey4/releases/download/v${version}/archey4_${version}-1_all.deb" \
+                -o "$tmpdir/archey.deb"
+            sudo apt-get install -y "$tmpdir/archey.deb"
+            ;;
+        fedora)
+            curl -fsSL "https://github.com/HorlogeSkynet/archey4/releases/download/v${version}/archey4-${version}-1.noarch.rpm" \
+                -o "$tmpdir/archey.rpm"
+            sudo dnf install -y "$tmpdir/archey.rpm"
+            ;;
+    esac
+    rm -rf "$tmpdir"
+}
+
 # --- Fonts ---
 
 install_caskaydia_font() {
@@ -526,6 +551,7 @@ verify_bootstrap() {
     check "k9s"            "$(check_cmd k9s)"
     check "lazygit"        "$(check_cmd lazygit)"
     check "lazydocker"     "$(check_cmd lazydocker)"
+    check "archey"         "$(check_cmd archey)"
 
     echo
     printf '\033[1m[Shell]\033[0m\n'

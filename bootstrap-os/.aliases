@@ -1,25 +1,42 @@
-# faster
-alias update='sudo apt update && printf "\n\n" && sudo snap refresh --list'
-alias upgrade='sudo apt dist-upgrade && printf "\n\n" && sudo snap refresh'
 
-# saftey
+## better defaults
+alias cat='batcat --paging=never'
+alias ls='eza --icons=always --git -M'
+
+## default default
+alias catcat='\cat'
+alias lsls='\ls'
+
+## faster
+alias ..="cd .."
+upgrade() {
+    if command -v apt >/dev/null 2>&1; then
+        sudo apt update
+        command -v snap >/dev/null 2>&1 && { printf '\n\n'; sudo snap refresh --list; }
+        sudo apt dist-upgrade
+        command -v snap >/dev/null 2>&1 && { printf '\n\n'; sudo snap refresh; }
+    elif command -v dnf >/dev/null 2>&1; then
+        sudo dnf upgrade --refresh
+    else
+        echo "upgrade: no supported package manager found" >&2
+        return 1
+    fi
+
+    if command -v flatpak >/dev/null 2>&1; then
+        printf '\n\n'
+        flatpak update
+    fi
+}
+
+## saftey
 alias rm='rm -i'
 
-# fix the stupid
+## fix the stupid
 alias nao='nano'
 alias nana='nano'
 alias clera='clear'
 alias cd..='cd ..'
-alias ..="cd .."
 alias terrafrom='terraform'
-
-# shortcuts
-alias k='kubectl'
-alias tf='terraform'
-alias tfa='terraform apply'
-alias s='sudo'
-alias tf='terraform'
-alias brave='brave-browser'
 
 ## docker 
 alias dc='docker compose'
@@ -28,6 +45,7 @@ alias dcd='docker compose down'
 alias dcp='docker compose pull'
 alias dps="docker ps --format '{{.Names}}' | sort"
 alias dexec='docker exec -it'
+
 ## git
 alias gs='git status'
 alias gadd='git add'
@@ -35,18 +53,18 @@ alias gb='git branch -vv'
 alias checkout='git checkout'
 alias gcm='git commit -m'
 
-# easy
+# other shorthand
+alias k='kubectl'
+alias tf='terraform'
+alias tfa='terraform apply'
+alias s='sudo'
+alias tf='terraform'
+
+# easy of use
 alias cls='clear'
 alias rg='rg --sort path '
-
-# better defaults
-alias cat='batcat --paging=never'
-alias ls='eza --icons=always --git -M'
-
-# default default
-alias catcat='\cat'
-alias lsls='\ls'
+alias brave='brave-browser'
+alias btop="btop --utf-force"
 
 # Tools
-alias vault-login='source /home/dan/tools/scripts/env-vars/vault-env-vars_set.source'
-alias set-proxy='source /home/dan/tools/scripts/env-vars/proxy-set.source'
+
