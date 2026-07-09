@@ -371,7 +371,10 @@ install_terraform() {
 
 install_minikube() {
     begin_install minikube || return 0
-    install_binary minikube "https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64"
+    if ! pkg_install minikube 2>/dev/null; then
+        warn "minikube not in package repos — installing binary from Google..."
+        install_binary minikube "https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64"
+    fi
 }
 
 install_docker() {
@@ -403,29 +406,41 @@ install_docker() {
 
 install_kubectl() {
     begin_install kubectl || return 0
-    local version; version=$(curl -fsSL https://dl.k8s.io/release/stable.txt)
-    install_binary kubectl "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl"
+    if ! pkg_install kubectl 2>/dev/null; then
+        warn "kubectl not in package repos — installing binary from dl.k8s.io..."
+        local version; version=$(curl -fsSL https://dl.k8s.io/release/stable.txt)
+        install_binary kubectl "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl"
+    fi
 }
 
 install_k9s() {
     begin_install k9s || return 0
-    local version; version=$(github_latest_tag derailed/k9s)
-    github_install k9s \
-        "https://github.com/derailed/k9s/releases/download/${version}/k9s_Linux_amd64.tar.gz"
+    if ! pkg_install k9s 2>/dev/null; then
+        warn "k9s not in package repos — installing from GitHub releases..."
+        local version; version=$(github_latest_tag derailed/k9s)
+        github_install k9s \
+            "https://github.com/derailed/k9s/releases/download/${version}/k9s_Linux_amd64.tar.gz"
+    fi
 }
 
 install_lazygit() {
     begin_install lazygit || return 0
-    local version; version=$(github_latest_tag jesseduffield/lazygit strip-v)
-    github_install lazygit \
-        "https://github.com/jesseduffield/lazygit/releases/download/v${version}/lazygit_${version}_Linux_x86_64.tar.gz"
+    if ! pkg_install lazygit 2>/dev/null; then
+        warn "lazygit not in package repos — installing from GitHub releases..."
+        local version; version=$(github_latest_tag jesseduffield/lazygit strip-v)
+        github_install lazygit \
+            "https://github.com/jesseduffield/lazygit/releases/download/v${version}/lazygit_${version}_Linux_x86_64.tar.gz"
+    fi
 }
 
 install_lazydocker() {
     begin_install lazydocker || return 0
-    local version; version=$(github_latest_tag jesseduffield/lazydocker strip-v)
-    github_install lazydocker \
-        "https://github.com/jesseduffield/lazydocker/releases/download/v${version}/lazydocker_${version}_Linux_x86_64.tar.gz"
+    if ! pkg_install lazydocker 2>/dev/null; then
+        warn "lazydocker not in package repos — installing from GitHub releases..."
+        local version; version=$(github_latest_tag jesseduffield/lazydocker strip-v)
+        github_install lazydocker \
+            "https://github.com/jesseduffield/lazydocker/releases/download/v${version}/lazydocker_${version}_Linux_x86_64.tar.gz"
+    fi
 }
 
 install_archey() {
@@ -513,8 +528,12 @@ verify_bootstrap() {
 
     check() {
         local label="$1" result="$2"
-        if [ "$result" = "ok" ]; then
-            printf '  \033[0;32m✓\033[0m %s\n' "$label"
+        if [[ "$result" == ok* ]]; then
+            if [ "$result" = "ok" ]; then
+                printf '  \033[0;32m✓\033[0m %s\n' "$label"
+            else
+                printf '  \033[0;32m✓\033[0m %s  \033[0;33m%s\033[0m\n' "$label" "${result#ok }"
+            fi
             (( ++pass )) || true
         else
             printf '  \033[0;31m✗\033[0m %s — %s\n' "$label" "$result"
@@ -526,6 +545,18 @@ verify_bootstrap() {
     check_file() { [ -e "$1" ] && echo "ok" || echo "missing: $1"; }
     check_dir()  { [ -d "$1" ] && echo "ok" || echo "missing: $1"; }
     check_grep() { grep -q "$2" "$1" 2>/dev/null && echo "ok" || echo "not found in $1"; }
+    # Flags "from git" for binaries in /usr/local/bin (github_install/install_binary target),
+    # plain "ok" for anything installed by the package manager (typically /usr/bin).
+    check_source() {
+        local path; path=$(command -v "$1" 2>/dev/null)
+        if [ -z "$path" ]; then
+            echo "not found"
+        elif [[ "$path" == /usr/local/bin/* ]]; then
+            echo "ok (from git)"
+        else
+            echo "ok"
+        fi
+    }
 
     echo
     printf '\033[1m=== Bootstrap Verification ===\033[0m\n'
@@ -535,7 +566,7 @@ verify_bootstrap() {
     check "ripgrep (rg)"   "$(check_cmd rg)"
     check "fzf"            "$(check_cmd fzf)"
     check "htop"           "$(check_cmd htop)"
-    check "btop"           "$(check_cmd btop)"
+    check "btop"           "$(check_source btop)"
     check "jq"             "$(check_cmd jq)"
     check "tree"           "$(check_cmd tree)"
     check "fd"             "$(command_exists fd || command_exists fdfind || [ -L "$HOME/.local/bin/fd" ] && echo ok || echo 'not found')"
@@ -545,12 +576,12 @@ verify_bootstrap() {
     check "bat"            "$(command_exists bat || command_exists batcat || [ -L "$HOME/.local/bin/bat" ] && echo ok || echo 'not found')"
     check "eza"            "$(check_cmd eza)"
     check "terraform"      "$(check_cmd terraform)"
-    check "minikube"       "$(check_cmd minikube)"
+    check "minikube"       "$(check_source minikube)"
     check "docker"         "$(check_cmd docker)"
-    check "kubectl"        "$(check_cmd kubectl)"
-    check "k9s"            "$(check_cmd k9s)"
-    check "lazygit"        "$(check_cmd lazygit)"
-    check "lazydocker"     "$(check_cmd lazydocker)"
+    check "kubectl"        "$(check_source kubectl)"
+    check "k9s"            "$(check_source k9s)"
+    check "lazygit"        "$(check_source lazygit)"
+    check "lazydocker"     "$(check_source lazydocker)"
     check "archey"         "$(check_cmd archey)"
 
     echo
